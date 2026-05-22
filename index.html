@@ -1,0 +1,21 @@
+<script>
+async function search() {
+  const q = document.getElementById('q').value;
+
+  const res = await fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: q })
+  });
+
+  const data = await res.json();
+
+  document.getElementById('results').innerHTML =
+    data.map(r => `<div>${r.program_number} — ${r.title}</div>`).join('');
+}
+</script>
+<h1>Hearts of Space</h1>
+<input id="q" placeholder="Describe a mood..." />
+<button onclick="search()">Search</button>
+
+<div id="results"></div>
