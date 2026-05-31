@@ -4,7 +4,7 @@ import os
 from typing import Optional
 
 import mysql.connector
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
@@ -250,6 +250,42 @@ def build_result(row, score=None):
     }
 
 
+def get_program_by_number(program_number):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
+          p.id,
+          p.program_number,
+          p.title,
+          p.short_description,
+          p.description,
+          p.weather_report,
+          p.program_date,
+          p.producer,
+          p.gallery_url
+        FROM programs p
+        WHERE p.program_number = %s
+        LIMIT 1
+    """, (program_number,))
+
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not row:
+        return None
+
+    result = build_result(row)
+    tracks_by_program = fetch_tracks_for_programs([result["id"]])
+    result["tracks"] = tracks_by_program.get(result["id"], [])
+    del result["id"]
+
+    return result
+
+
 def run_search(
     text=None,
     program_name=None,
@@ -377,6 +413,18 @@ def genre_query():
 @app.get("/genres")
 def get_genres():
     return genre_query()
+
+
+@app.get("/programs/{program_number}")
+def get_program(
+    program_number: int
+):
+    program = get_program_by_number(program_number)
+
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+
+    return program
 
 
 @app.get("/similar/{program_number}")

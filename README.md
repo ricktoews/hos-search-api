@@ -139,6 +139,24 @@ Supported filters:
 
 ---
 
+### Program Lookup
+
+```http
+GET /programs/{program_number}
+```
+
+Returns one program and its tracks by program number.
+
+Example:
+
+```http
+GET /programs/1421
+```
+
+Returns `404` when the program number is not found.
+
+---
+
 ### Similar Programs
 
 ```http
