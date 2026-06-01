@@ -10,6 +10,7 @@ This service provides:
 - “more like this” similarity search
 - genre lookup
 - program track retrieval
+- preset mood program lists
 
 The API is used by the HOS web frontend, at https://hos-search.vercel.app.
 
@@ -154,6 +155,82 @@ GET /programs/1421
 ```
 
 Returns `404` when the program number is not found.
+
+---
+
+### Preset Moods
+
+```http
+GET /preset-moods
+```
+
+Returns all active preset moods.
+
+Example response:
+
+```json
+[
+  {
+    "slug": "deep-space",
+    "name": "Deep Space",
+    "description": "Expansive, atmospheric programs for deep listening."
+  }
+]
+```
+
+---
+
+### Preset Mood Programs
+
+```http
+GET /preset-moods/{slug}/programs
+```
+
+Returns one active preset mood and its ranked programs.
+Program objects use the same full shape as other program endpoints,
+including descriptions, producer, date, gallery URL, weather report,
+score, and tracks.
+
+Query parameters:
+
+- `limit`
+  Maximum number of programs. Defaults to `20` and is clamped from `1` to `100`.
+
+Example:
+
+```http
+GET /preset-moods/deep-space/programs?limit=20
+```
+
+Example response:
+
+```json
+{
+  "mood": {
+    "slug": "deep-space",
+    "name": "Deep Space",
+    "description": "Expansive, atmospheric programs for deep listening."
+  },
+  "programs": [
+    {
+      "score": 0.9234,
+      "program_number": 1421,
+      "title": "Example Program",
+      "description": "Full program description.",
+      "short_description": "Short program description.",
+      "producer": "Example Producer",
+      "program_date": "2024-01-01",
+      "gallery_url": "https://example.com/gallery",
+      "weather_report": "Weather report text.",
+      "similarity_score": 0.9234,
+      "rank_order": 1,
+      "tracks": []
+    }
+  ]
+}
+```
+
+Returns `404` when the preset mood slug is not found or inactive.
 
 ---
 

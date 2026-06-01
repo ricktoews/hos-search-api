@@ -447,3 +447,92 @@ def search(query: SearchQuery):
         program_content=query.program_content,
         limit=query.limit,
     )
+
+
+@app.get("/preset-moods")
+def get_preset_moods():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT slug, name, description
+        FROM preset_moods
+        WHERE active = 1
+        ORDER BY name
+    """)
+
+    moods = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return moods
+
+
+@app.get("/preset-moods/{slug}/programs")
+def get_preset_mood_programs(slug: str, limit: int = 20):
+    limit = min(max(limit, 1), 100)
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, slug, name, description
+        FROM preset_moods
+        WHERE slug = %s
+          AND active = 1
+    """, (slug,))
+
+    mood = cursor.fetchone()
+
+    if not mood:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Preset mood not found")
+
+    cursor.execute("""
+        SELECT
+            p.id,
+            p.program_number,
+            p.title,
+            p.short_description,
+            p.description,
+            p.weather_report,
+            p.program_date,
+            p.producer,
+            p.gallery_url,
+            pmp.similarity_score,
+            pmp.rank_order
+        FROM preset_mood_programs pmp
+        JOIN programs p ON p.id = pmp.program_id
+        WHERE pmp.preset_mood_id = %s
+        ORDER BY pmp.rank_order, p.program_number
+        LIMIT %s
+    """, (mood["id"], limit))
+
+    program_rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    program_ids = [row["id"] for row in program_rows]
+    tracks_by_program = fetch_tracks_for_programs(program_ids)
+
+    programs = []
+
+    for row in program_rows:
+        program = build_result(row, row["similarity_score"])
+        program["similarity_score"] = row["similarity_score"]
+        program["rank_order"] = row["rank_order"]
+        program["tracks"] = tracks_by_program.get(program["id"], [])
+        del program["id"]
+        programs.append(program)
+
+    return {
+        "mood": {
+            "slug": mood["slug"],
+            "name": mood["name"],
+            "description": mood["description"]
+        },
+        "programs": programs
+    }
