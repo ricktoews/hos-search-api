@@ -455,7 +455,7 @@ def get_preset_moods():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT slug, name, description
+        SELECT slug, name, description, embedding_text
         FROM preset_moods
         WHERE active = 1
         ORDER BY name

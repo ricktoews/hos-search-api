@@ -173,7 +173,8 @@ Example response:
   {
     "slug": "deep-space",
     "name": "Deep Space",
-    "description": "Expansive, atmospheric programs for deep listening."
+    "description": "Expansive, atmospheric programs for deep listening.",
+    "embedding_text": "A mood description used for semantic matching."
   }
 ]
 ```
